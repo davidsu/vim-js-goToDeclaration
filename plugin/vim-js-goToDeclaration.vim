@@ -63,6 +63,10 @@ function! s:stayedInSamePosition(pos)
 endfunction
 
 function! s:handleFunctionStayedInSamePosition(wordUnderCursor, isFunction)
+    if getline('.') =~ '.*\s*require(.*)' && strpart(getline('.'), 0, getpos('.')[2]) =~ '\s*require(''[^'']*$' && strpart(getline('.'), getpos('.')[2]) =~ '[^'']*'')'
+        call GoToFile()
+        return
+    endif
 	let @/=a:wordUnderCursor
 	"can't jump to definition with tern, do a search with ag + fzf
 	if a:isFunction
@@ -73,15 +77,48 @@ function! s:handleFunctionStayedInSamePosition(wordUnderCursor, isFunction)
 	let g:searchedKeyword=a:wordUnderCursor
 endfunction
 
-function! s:isCommanJsRequire()
+function! s:isCommonJsRequire()
 	return getline('.') =~ '^const.*=\s*require(.*)$'
 endfunction
 
 function! s:goToCommanJSModule()
+    let l:pos = getpos('.')
+    if strpart(getline('.'), 0, getpos('.')[2]) =~ '=\s*require('
+        TernDef
+    else
 	call search('require(\(''\|"\).', 'e')
 	silent TernDef
+    endif
+    if s:stayedInSamePosition(l:pos)
+	call GoToFile()
+    endif
+    if !s:stayedInSamePosition(l:pos)
 	call CursorPing()
+    endif
 endfunction
+
+function! GoToFile()
+    if getline('.') !~ '.*\s*require(.*)'
+	echom 'early return'
+        return
+    endif
+	if strpart(getline('.'), 0, getpos('.')[2]) =~ '\s*require('
+		normal "fyi'
+		let l:file = resolve(expand('%:h').'/'.@f)
+		echom l:file
+		if !filereadable(l:file) && filereadable(l:file.'.js')
+			let l:file = l:file.'.js'
+		endif
+		if !filereadable(l:file) && filereadable(l:file.'.jsx')
+			let l:file = l:file.'.jsx'
+		endif
+		echom l:file
+		if filereadable(l:file)
+			execute 'edit '.l:file
+		endif
+    endif
+endfunction
+
 function! GoToDeclaration()
     let l:pos = getpos('.')
     let l:currFileName = expand('%')
@@ -89,13 +126,14 @@ function! GoToDeclaration()
     let l:wordUnderCursor = expand('<cword>')
     let l:isFunction = match(l:lineFromCursorPosition , '^\(\w\|\s\)*(') + 1
     silent TernDef
-	if s:isCommanJsRequire()
-		let @/=l:wordUnderCursor
-		call s:goToCommanJSModule()
+    if s:isCommonJsRequire()
+	echom 'siCommonjs'
+	let @/=l:wordUnderCursor
+	call s:goToCommanJSModule()
     elseif s:jsxStayedInSameLine(l:pos, l:wordUnderCursor)
-		call s:handleJsxStayedInSameLine(l:wordUnderCursor)
+	call s:handleJsxStayedInSameLine(l:wordUnderCursor)
     elseif s:stayedInSamePosition(l:pos)
-		call s:handleFunctionStayedInSamePosition(l:wordUnderCursor, l:isFunction)
+	call s:handleFunctionStayedInSamePosition(l:wordUnderCursor, l:isFunction)
     else
         let l:newCursorLine = getline('.')
         let l:newCurrFileName = expand('%')
@@ -113,3 +151,5 @@ function! GoToDeclaration()
         call CursorPing()
     endif
 endfunction
+
+nmap <space>gf :call GoToFile()
