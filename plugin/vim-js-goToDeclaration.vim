@@ -152,4 +152,4 @@ function! GoToDeclaration()
     endif
 endfunction
 
-nmap <space>gf :call GoToFile()
+" nmap <space>gf :call GoToFile()
