@@ -39,7 +39,7 @@ if !exists("*FindFunction")
 		" (?<=...) positive lookbehind: must constain
 		" (?=...) positive lookahead: must contain
 		let agcmd = '''(?<=function\s)'.a:functionName.'(?=\()|'.a:functionName.'\s*:|(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)'' '.additionalParams
-		call fzf#vim#ag_raw(agcmd, s:defaultPreview())
+		call fzf#vim#ag_raw(agcmd, s:defaultPreview(), 1)
 	endfunction
 endif
 
@@ -72,7 +72,7 @@ function! s:handleFunctionStayedInSamePosition(wordUnderCursor, isFunction)
 	if a:isFunction
 		FindNoTestFunction(a:wordUnderCursor)
 	else
-		call fzf#vim#ag(expand('<cword>'), s:defaultPreview() ) 
+		call fzf#vim#ag(expand('<cword>'), s:defaultPreview() , 1) 
 	endif
 	let g:searchedKeyword=a:wordUnderCursor
 endfunction
