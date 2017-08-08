@@ -128,7 +128,7 @@ function! GoToDeclaration()
     silent TernDef
     if s:isCommonJsRequire()
 	echom 'siCommonjs'
-	let @/=l:wordUnderCursor
+	let @/='\v<'.l:wordUnderCursor.'>'
 	call s:goToCommanJSModule()
     elseif s:jsxStayedInSameLine(l:pos, l:wordUnderCursor)
 	call s:handleJsxStayedInSameLine(l:wordUnderCursor)
@@ -140,7 +140,7 @@ function! GoToDeclaration()
         let l:regex = '^\s*' . l:wordUnderCursor . '\s*\(,\?\|\(:\s*' . l:wordUnderCursor . ',\?\)\)\s*$'
         echom l:regex
         if l:newCurrFileName != l:currFileName && match(l:newCursorLine, '\((\|=\)') < 0 && match(getline('.'), regex ) + 1
-            let @/=l:wordUnderCursor
+            let @/='\v<'.l:wordUnderCursor.'>'
             "we are inside a module.exports, maybe we can get to the line where the function is declared
             echom 'the line: ' . getline('.')
             call search(l:wordUnderCursor . '\s*\((\|=\)')
