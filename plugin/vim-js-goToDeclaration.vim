@@ -87,6 +87,7 @@ function! s:goToCommanJSModule()
         TernDef
     else
 	call search('require(\(''\|"\).', 'e')
+	let l:pos = getpos('.')
 	silent TernDef
     endif
     if s:stayedInSamePosition(l:pos)
