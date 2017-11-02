@@ -38,7 +38,12 @@ if !exists("*FindFunction")
 		let additionalParams = ( a:0 > 0 ) ? a:1 : ''
 		" (?<=...) positive lookbehind: must constain
 		" (?=...) positive lookahead: must contain
-		let agcmd = '''(?<=function\s)'.a:functionName.'(?=\()|'.a:functionName.'\s*:|(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)'' '.additionalParams
+		let agcmd = '''(?<=function\s)'.a:functionName.'(?=\()|'.
+			    \a:functionName.'\s*:|'.
+			    \'(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)|'.
+			    \'(var|let|const)\s*'.a:functionName.'(?=\s*=\s*(function|\([^)]*\)\s*=>)\s*)'.
+			    \''' '.
+			    \additionalParams
 		call fzf#vim#ag_raw(agcmd, s:defaultPreview(), 1)
 	endfunction
 endif
