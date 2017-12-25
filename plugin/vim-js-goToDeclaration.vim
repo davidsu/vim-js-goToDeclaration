@@ -33,8 +33,20 @@ if !exists("*CursorPing")
 	endfunction
 endif
 
+function! s:get_git_root()
+    if exists('*fugitive#repo')
+	try
+	    return fugitive#repo().tree()
+	catch
+	endtry
+    endif
+    let root = split(system('git rev-parse --show-toplevel'), '\n')[0]
+    return v:shell_error ? '' : root
+endfunction
+
 if !exists("*FindFunction")
 	function! FindFunction(functionName, ...)
+        let gitRepo = s:get_git_root()
 		let additionalParams = ( a:0 > 0 ) ? a:1 : ''
 		" (?<=...) positive lookbehind: must constain
 		" (?=...) positive lookahead: must contain
@@ -42,7 +54,7 @@ if !exists("*FindFunction")
 			    \a:functionName.'\s*:|'.
 			    \'(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)|'.
 			    \'(var|let|const)\s*'.a:functionName.'(?=\s*=\s*(function|\([^)]*\)\s*=>)\s*)'.
-			    \''' '.
+			    \''' -p '''.gitRepo.'/.gitignore'' '.
 			    \additionalParams
 		call fzf#vim#ag_raw(agcmd, s:defaultPreview(), 1)
 	endfunction
