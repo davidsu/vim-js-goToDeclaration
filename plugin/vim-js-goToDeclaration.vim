@@ -18,8 +18,12 @@ function! s:defaultPreview()
 
 endfunction
 
+let s:disablePing = 0
 if !exists("*CursorPing")
 	function! CursorPing(...)
+	    if s:disablePing
+            return
+	    endif
 		let _cursorline = &cursorline
 		let _cursorcolumn = &cursorcolumn
 		set cursorline 
@@ -79,19 +83,53 @@ function! s:stayedInSamePosition(pos)
 	return join(a:pos) == join(getpos('.'))
 endfunction
 
+function! s:goToCoreUtilsLib()
+    if getcwd() !~ '\<santa\>'
+        return 0
+    endif
+    let l:WordUnderCursor = expand('<cWORD>')
+    if l:WordUnderCursor !~ '\<coreUtilsLib\>'
+        return 0
+    endif
+    let l:santaCoreUtilsEntry = getcwd().'/node_modules/santa-core-utils/src/coreUtils/src/coreUtils.js'
+    if !filereadable(l:santaCoreUtilsEntry)
+        return 0
+    endif
+    let l:functionName = substitute(l:WordUnderCursor, '.*coreUtilsLib.\(\w\+\)\>.*', '\1', '')
+    execute 'edit '.l:santaCoreUtilsEntry
+    " normal! G
+    let l:found = search('const \<'.l:functionName.'\>.*require(''.*\ze''') || search(':\s*\zs\<'.l:functionName.'\>')
+    if l:found
+	let s:disablePing = 1
+        normal! $h
+        call GoToDeclaration()
+        let l:subFunctionName = substitute(l:WordUnderCursor, '.*coreUtilsLib.'.l:functionName.'.\(\w\+\)\>.*', '\1', '')
+        if l:subFunctionName != l:WordUnderCursor
+            call search(l:subFunctionName)
+        endif
+        let s:disablePing = 0
+        call CursorPing()
+        return 1
+    endif
+    return 1
+
+endfunction
 function! s:handleFunctionStayedInSamePosition(wordUnderCursor, isFunction)
+    if s:goToCoreUtilsLib()
+        return
+    endif
     if getline('.') =~ '.*\s*require(.*)' && strpart(getline('.'), 0, getpos('.')[2]) =~ '\s*require(''[^'']*$' && strpart(getline('.'), getpos('.')[2]) =~ '[^'']*'')'
         call GoToFile()
         return
     endif
-	let @/=a:wordUnderCursor
-	"can't jump to definition with tern, do a search with ag + fzf
-	if a:isFunction
-		FindNoTestFunction(a:wordUnderCursor)
-	else
-		call fzf#vim#ag(expand('<cword>'), s:defaultPreview() , 1) 
-	endif
-	let g:searchedKeyword=a:wordUnderCursor
+    let @/=a:wordUnderCursor
+    "can't jump to definition with tern, do a search with ag + fzf
+    if a:isFunction
+        FindNoTestFunction(a:wordUnderCursor)
+    else
+        call fzf#vim#ag(expand('<cword>'), s:defaultPreview() , 1) 
+    endif
+    let g:searchedKeyword=a:wordUnderCursor
 endfunction
 
 function! s:isCommonJsRequire()
