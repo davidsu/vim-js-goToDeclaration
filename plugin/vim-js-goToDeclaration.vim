@@ -55,7 +55,8 @@ if !exists("*FindFunction")
 		" (?<=...) positive lookbehind: must constain
 		" (?=...) positive lookahead: must contain
 		let agcmd = '''(?<=function\s)'.a:functionName.'(?=\()|'.
-			    \a:functionName.'\s*:|'.
+			    \'\b'.a:functionName.'\s*:|'.
+			    \'^\s*'.a:functionName.'\([^)]*\)\s*\{\s*$|'.
 			    \'(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)|'.
 			    \'(var|let|const)\s*'.a:functionName.'(?=\s*=\s*(function|\([^)]*\)\s*=>)\s*)'.
 			    \''' -p '''.gitRepo.'/.gitignore'' '.
