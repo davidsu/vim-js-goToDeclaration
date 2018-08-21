@@ -1,40 +1,40 @@
 if !exists("g:fzf_defaultPreview")
-	let g:fzf_defaultPreview = '/Users/davidsu/.dotfiles/config/nvim/plugged/fzf.vim/bin/preview.rb'
+    let g:fzf_defaultPreview = '/Users/davidsu/.dotfiles/config/nvim/plugged/fzf.vim/bin/preview.rb'
 endif
 if exists('$IGNORE_TESTS')
-	let s:ignoreTests = $IGNORE_TESTS
+    let s:ignoreTests = $IGNORE_TESTS
 else
-	let s:ignoreTests = " --ignore '*.spec.js' --ignore '*.unit.js' --ignore '*.it.js' --ignore '*.*.spec.js' --ignore '*.*.*unit.js' --ignore '*.*.*it.js'"
+    let s:ignoreTests = " --ignore '*.spec.js' --ignore '*.unit.js' --ignore '*.it.js' --ignore '*.*.spec.js' --ignore '*.*.*unit.js' --ignore '*.*.*it.js'"
 endif
 function! s:defaultPreview()
-	" return fzf#vim#with_preview({'down': '100%'}, 'up:70%', 'ctrl-g')
-	" return fzf#vim#with_preview({'down': '100%'}, 'up:50%', 'ctrl-e:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty,ctrl-g')
-	return {'options': ' --preview-window up:50% '.
-				\'--preview "'''.g:fzf_defaultPreview.'''"\ -v\ {} '.
-				\'--header ''CTRL-o - open without abort :: CTRL-s - toggle sort :: CTRL-g - toggle preview window'' '. 
-				\'--bind ''ctrl-g:toggle-preview,'.
-				\'ctrl-o:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty''', 
-				\'down': '100%'}
+    " return fzf#vim#with_preview({'down': '100%'}, 'up:70%', 'ctrl-g')
+    " return fzf#vim#with_preview({'down': '100%'}, 'up:50%', 'ctrl-e:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty,ctrl-g')
+    return {'options': ' --preview-window up:50% '.
+		\'--preview "'''.g:fzf_defaultPreview.'''"\ -v\ {} '.
+		\'--header ''CTRL-o - open without abort :: CTRL-s - toggle sort :: CTRL-g - toggle preview window'' '. 
+		\'--bind ''ctrl-g:toggle-preview,'.
+		\'ctrl-o:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty''', 
+		\'down': '100%'}
 
 endfunction
 
 let s:disablePing = 0
 if !exists("*CursorPing")
-	function! CursorPing(...)
-	    if s:disablePing
-            return
-	    endif
-		let _cursorline = &cursorline
-		let _cursorcolumn = &cursorcolumn
-		set cursorline 
-		if !a:0
-			set cursorcolumn
-		endif
-		redraw
-		sleep 350m
-		let &cursorline = _cursorline
-		let &cursorcolumn = _cursorcolumn
-	endfunction
+    function! CursorPing(...)
+	if s:disablePing
+	    return
+	endif
+	let _cursorline = &cursorline
+	let _cursorcolumn = &cursorcolumn
+	set cursorline 
+	if !a:0
+	    set cursorcolumn
+	endif
+	redraw
+	sleep 350m
+	let &cursorline = _cursorline
+	let &cursorcolumn = _cursorcolumn
+    endfunction
 endif
 
 function! s:get_git_root()
@@ -176,8 +176,22 @@ function! GoToFile()
     endif
 endfunction
 
+let s:pos = []
 function! GoToDeclaration()
+    let s:pos = getpos('.')
+    TSDef
+    let s:callbacks = {
+		\ 'on_exit': function('OldGoToDeclaration'),
+		\ }
+    let pid = jobstart('sleep 0.1', s:callbacks)
+    let s:callbacks.pid = pid
+endfunction
+
+function! OldGoToDeclaration(...)
     let l:pos = getpos('.')
+    if s:pos != l:pos
+        return
+    endif
     let l:currFileName = expand('%')
     let l:lineFromCursorPosition = strpart(getline('.'), getpos('.')[2])
     let l:wordUnderCursor = expand('<cword>')
