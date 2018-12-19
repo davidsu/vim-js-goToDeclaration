@@ -129,6 +129,7 @@ function! s:handleFunctionStayedInSamePosition(wordUnderCursor, isFunction)
         FindNoTestFunction(a:wordUnderCursor)
     else
         call fzf#vim#ag(expand('<cword>'), s:defaultPreview() , 1) 
+        call IinOneMS()
     endif
     let g:searchedKeyword=a:wordUnderCursor
 endfunction
@@ -183,6 +184,17 @@ function! GoToDeclaration()
     let s:callbacks = {
 		\ 'on_exit': function('OldGoToDeclaration'),
 		\ }
+    let pid = jobstart('sleep 0.1', s:callbacks)
+    let s:callbacks.pid = pid
+endfunction
+
+function! NormalI(...)
+    call feedkeys('j')
+endfunction
+function! IinOneMS(...)
+    let s:callbacks = {
+        \ 'on_exit': function('NormalI'),
+        \ }
     let pid = jobstart('sleep 0.1', s:callbacks)
     let s:callbacks.pid = pid
 endfunction
