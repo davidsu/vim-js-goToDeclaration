@@ -138,6 +138,25 @@ function! s:isCommonJsRequire()
 	return getline('.') =~ '^const.*=\s*require(.*)$'
 endfunction
 
+function! s:isEsModule()
+    return getline('.') =~ '^\s*import'
+endfunction
+" import {isScreenWide} from '../../utils/utils';
+function! s:goToEsModule()
+    let l:pos = getpos('.')
+    let l:wordUnderCursor = expand('<cword>')
+    normal! 0
+    call search('import.*[''"]', 'e')
+    normal h
+    TernDef
+    if s:stayedInSamePosition(l:pos)
+	call GoToFile()
+    endif
+    if !s:stayedInSamePosition(l:pos)
+	normal! n
+	call CursorPing()
+    endif
+endfunction
 function! s:goToCommanJSModule()
     let l:pos = getpos('.')
     if strpart(getline('.'), 0, getpos('.')[2]) =~ '=\s*require('
@@ -208,11 +227,17 @@ function! OldGoToDeclaration(...)
     let l:lineFromCursorPosition = strpart(getline('.'), getpos('.')[2])
     let l:wordUnderCursor = expand('<cword>')
     let l:isFunction = match(l:lineFromCursorPosition , '^\(\w\|\s\)*(') + 1
-    silent TernDef
+    if !s:isEsModule()
+	silent TernDef
+    endif
     if s:isCommonJsRequire()
 	echom 'siCommonjs'
 	let @/='\v<'.l:wordUnderCursor.'>'
 	call s:goToCommanJSModule()
+    elseif s:isEsModule()
+	echom 'esModule'
+	let @/='\v<'.l:wordUnderCursor.'>'
+	call s:goToEsModule()
     elseif s:jsxStayedInSameLine(l:pos, l:wordUnderCursor)
 	call s:handleJsxStayedInSameLine(l:wordUnderCursor)
     elseif s:stayedInSamePosition(l:pos)
