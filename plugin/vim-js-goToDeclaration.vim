@@ -1,3 +1,6 @@
+if exists('*GoToFile')
+    finish
+endif
 if !exists("g:fzf_defaultPreview")
     let g:fzf_defaultPreview = '$HOME/.dotfiles/config/nvim/plugged/fzf.vim/bin/preview.rb'
 endif
@@ -54,11 +57,12 @@ if !exists("*FindFunction")
         let additionalParams = ( a:0 > 0 ) ? a:1 : ''
         " (?<=...) positive lookbehind: must constain
         " (?=...) positive lookahead: must contain
-        let agcmd = '''(?<=function\s)'.a:functionName.'(?=\()|'.
+        let agcmd = '''(?<=function\s)'.a:functionName.'(?=\s*\()|'.
                     \'\b'.a:functionName.'\s*:|'.
                     \'^\s*'.a:functionName.'\([^)]*\)\s*\{\s*$|'.
                     \'(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)|'.
-                    \'(var|let|const|this\.)\s*'.a:functionName.'(?=\s*=\s*(function|\([^)]*\)\s*=>)\s*)'.
+                    \'(var|let|const|this\.)\s*'.a:functionName.'(?=\s*=\s*(function|(\([^)]*\)|\w+)\s*=>)\s*)|'.
+                    \'(public|private)\s+'.a:functionName.'\('.
                     \''' -p '''.gitRepo.'/.gitignore'' '.
                     \additionalParams
         call fzf#vim#ag_raw(agcmd, s:defaultPreview(), 1)
@@ -148,13 +152,15 @@ function! s:goToEsModule()
     normal! 0
     call search('import.*[''"]', 'e')
     normal h
-    TernDef
-    if s:stayedInSamePosition(l:pos)
-        call GoToFile()
-    endif
-    if !s:stayedInSamePosition(l:pos)
-        normal! n
-        call CursorPing()
+    if exists(':TernDef')
+        TernDef
+        if s:stayedInSamePosition(l:pos)
+            call GoToFile()
+        endif
+        if !s:stayedInSamePosition(l:pos)
+            normal! n
+            call CursorPing()
+        endif
     endif
 endfunction
 function! s:goToCommanJSModule()
@@ -227,7 +233,7 @@ function! OldGoToDeclaration(...)
     let l:lineFromCursorPosition = strpart(getline('.'), getpos('.')[2])
     let l:wordUnderCursor = expand('<cword>')
     let l:isFunction = match(l:lineFromCursorPosition , '^\(\w\|\s\)*(') + 1
-    if !s:isEsModule()
+    if !s:isEsModule() && exists(':TernDef')
         silent TernDef
     endif
     if s:isCommonJsRequire()
