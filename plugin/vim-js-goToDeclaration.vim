@@ -62,7 +62,7 @@ if !exists("*FindFunction")
                     \'^\s*'.a:functionName.'\([^)]*\)\s*\{\s*$|'.
                     \'(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)|'.
                     \'(var|let|const|this\.)\s*'.a:functionName.'(?=\s*=\s*(function|(\([^)]*\)|\w+)\s*=>)\s*)|'.
-                    \'(public|private)\s+'.a:functionName.'\('.
+                    \'(public|private)\s+(async\s+)?'.a:functionName.'\('.
                     \''' -p '''.gitRepo.'/.gitignore'' '.
                     \additionalParams
         call fzf#vim#ag_raw(agcmd, s:defaultPreview(), 1)
