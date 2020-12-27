@@ -2,7 +2,7 @@ if exists('*GoToFile')
     finish
 endif
 if !exists("g:fzf_defaultPreview")
-    let g:fzf_defaultPreview = '$HOME/.dotfiles/config/nvim/plugged/fzf.vim/bin/preview.rb'
+    let g:fzf_defaultPreview = '$HOME/.dotfiles/bin/preview.sh'
 endif
 if exists('$IGNORE_TESTS')
     let s:ignoreTests = $IGNORE_TESTS
@@ -13,7 +13,7 @@ function! s:defaultPreview()
     " return fzf#vim#with_preview({'down': '100%'}, 'up:70%', 'ctrl-g')
     " return fzf#vim#with_preview({'down': '100%'}, 'up:50%', 'ctrl-e:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty,ctrl-g')
     return {'options': ' --preview-window up:50% '.
-                \'--preview "'''.g:fzf_defaultPreview.'''"\ -v\ {} '.
+                \'--preview "'''.g:fzf_defaultPreview.'''"\ {} '.
                 \'--header ''CTRL-o - open without abort :: CTRL-s - toggle sort :: CTRL-g - toggle preview window'' '. 
                 \'--bind ''ctrl-g:toggle-preview,'.
                 \'ctrl-o:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty''', 
@@ -62,9 +62,13 @@ if !exists("*FindFunction")
                     \'^\s*'.a:functionName.'\([^)]*\)\s*\{\s*$|'.
                     \'(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)|'.
                     \'(var|let|const|this\.)\s*'.a:functionName.'(?=\s*=\s*(function|(\([^)]*\)|\w+)\s*=>)\s*)|'.
-                    \'(public|private)\s+(async\s+)?'.a:functionName.'\('.
+                    \'(public|private)\s+(async\s+)?'.a:functionName.'\(|'.
+                    \'^\s+async\s+'.a:functionName.'\('.
                     \''' -p '''.gitRepo.'/.gitignore'' '.
                     \additionalParams
+        " let t = s:defaultPreview()
+        " echom t.options
+
         call fzf#vim#ag_raw(agcmd, s:defaultPreview(), 1)
     endfunction
 endif
@@ -88,41 +92,7 @@ function! s:stayedInSamePosition(pos)
     return join(a:pos) == join(getpos('.'))
 endfunction
 
-function! s:goToCoreUtilsLib()
-    if getcwd() !~ '\<santa\>'
-        return 0
-    endif
-    let l:WordUnderCursor = expand('<cWORD>')
-    if l:WordUnderCursor !~ '\<coreUtilsLib\>'
-        return 0
-    endif
-    let l:santaCoreUtilsEntry = getcwd().'/node_modules/santa-core-utils/src/coreUtils/src/coreUtils.js'
-    if !filereadable(l:santaCoreUtilsEntry)
-        return 0
-    endif
-    let l:functionName = substitute(l:WordUnderCursor, '.*coreUtilsLib.\(\w\+\)\>.*', '\1', '')
-    execute 'edit '.l:santaCoreUtilsEntry
-    " normal! G
-    let l:found = search('const \<'.l:functionName.'\>.*require(''.*\ze''') || search(':\s*\zs\<'.l:functionName.'\>')
-    if l:found
-        let s:disablePing = 1
-        normal! $h
-        call GoToDeclaration()
-        let l:subFunctionName = substitute(l:WordUnderCursor, '.*coreUtilsLib.'.l:functionName.'.\(\w\+\)\>.*', '\1', '')
-        if l:subFunctionName != l:WordUnderCursor
-            call search(l:subFunctionName)
-        endif
-        let s:disablePing = 0
-        call CursorPing()
-        return 1
-    endif
-    return 1
-
-endfunction
 function! s:handleFunctionStayedInSamePosition(wordUnderCursor, isFunction)
-    if s:goToCoreUtilsLib()
-        return
-    endif
     if getline('.') =~ '.*\s*require(.*)' && strpart(getline('.'), 0, getpos('.')[2]) =~ '\s*require(''[^'']*$' && strpart(getline('.'), getpos('.')[2]) =~ '[^'']*'')'
         call GoToFile()
         return
@@ -132,8 +102,8 @@ function! s:handleFunctionStayedInSamePosition(wordUnderCursor, isFunction)
     if a:isFunction
         FindNoTestFunction(a:wordUnderCursor)
     else
+        " echom s:defaultPreview().options
         call fzf#vim#ag(expand('<cword>'), s:defaultPreview() , 1) 
-        call IinOneMS()
     endif
     let g:searchedKeyword=a:wordUnderCursor
 endfunction
@@ -205,28 +175,27 @@ endfunction
 let s:pos = []
 function! GoToDeclaration()
     let s:pos = getpos('.')
-    TSDef
-    let s:callbacks = {
-                \ 'on_exit': function('OldGoToDeclaration'),
-                \ }
-    let pid = jobstart('sleep 0.1', s:callbacks)
-    let s:callbacks.pid = pid
-endfunction
-
-function! NormalI(...)
-    call feedkeys('j')
-endfunction
-function! IinOneMS(...)
-    let s:callbacks = {
-                \ 'on_exit': function('NormalI'),
-                \ }
-    let pid = jobstart('sleep 0.1', s:callbacks)
-    let s:callbacks.pid = pid
+    let l:currFileName = expand('%')
+    if l:currFileName =~ 'sx$'
+        echom 'jumpDefinition'
+        call CocAction('jumpDefinition')
+    endif
+    
+    if s:pos == getpos('.')
+        echom 'TSDef'
+        TSDef
+        let s:callbacks = {
+                    \ 'on_exit': function('OldGoToDeclaration'),
+                    \ }
+        let pid = jobstart('sleep 0.1', s:callbacks)
+        let s:callbacks.pid = pid
+    endif
 endfunction
 
 function! OldGoToDeclaration(...)
     let l:pos = getpos('.')
     if s:pos != l:pos
+        " echom 'TSDef succeeded'
         return
     endif
     let l:currFileName = expand('%')
